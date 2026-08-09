@@ -31,3 +31,6 @@ Can do the following :
 
 
 
+# Speech to text 
+
+* using openai-whisper 
