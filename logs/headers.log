@@ -1,0 +1,20 @@
+* Host localhost:11434 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+*   Trying [::1]:11434...
+* connect to ::1 port 11434 from ::1 port 56774 failed: Connection refused
+*   Trying 127.0.0.1:11434...
+* Connected to localhost (127.0.0.1) port 11434
+> POST /api/generate HTTP/1.1
+> Host: localhost:11434
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Content-Length: 61
+> Content-Type: application/x-www-form-urlencoded
+> 
+< HTTP/1.1 200 OK
+< Content-Type: application/x-ndjson
+< Date: Sat, 08 Aug 2026 16:18:12 GMT
+< Transfer-Encoding: chunked
+< 
+* Connection #0 to host localhost left intact
