@@ -50,3 +50,8 @@ export AMDGPU_TARGETS=gfx1030
 # For python3.12 
 pip install ctranslate2-4.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
 ```
+
+```bash
+sudo apt install -y rocminfo rocm-smi
+sudo usermod -a -G render,video $USER
+```
