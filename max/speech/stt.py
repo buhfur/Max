@@ -58,7 +58,9 @@ def main():
             # 4. Print results in real time
             for segment in segments:
                 if segment.text.strip():
-                    print(f"[{segment.start:.1f}s -> {segment.end:.1f}s]: {segment.text}")
+                    #print(f"[{segment.start:.1f}s -> {segment.end:.1f}s]: {segment.text}")
+                    # pipe data from data segment.text into model 
+                    print(f"{segment.text}")
 
     except KeyboardInterrupt:
         print("\nStopping stream...")

@@ -12,7 +12,7 @@ client = Client(
 
 response = client.chat(
         model='qwen3:8b', 
-        messages=[{'role': 'user', 'content': 'Help me understand fastapi in python3?' }],
+        messages=[{'role': 'user', 'content': 'What does the model actually look like under the hood, like the array of keywords' }],
         stream=True
 )
 

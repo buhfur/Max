@@ -1,11 +1,17 @@
 
 # TODO 
 
-- [ ] figure out how to take voice-to-text  
+- [x] figure out how to take voice-to-text  
 
         - [ ] translate and send as prompt to ollama model  
 
-        - [ ] give a response using text to speech 
+        - [ ] capture response from ollama output 
 
+        - [ ] funnel output into text-to-speech model 
+
+        - [ ] integrate wakeword 
+
+
+- [ ] landmark: Basic workflow 
 
 - [ ] landmark: run a system update on the terminal 

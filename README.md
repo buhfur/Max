@@ -5,7 +5,7 @@
 
 Can do the following : 
 
-* Run tests on code 
+* Run tests on code :
 
 * spin up dev environments
 
@@ -27,10 +27,6 @@ Can do the following :
 
 * highly customized terminal/code panes 
 
-![Proof of concept clip from Spiderman]()
+![Proof of concept clip from Spiderman](https://archive.org/details/spiderman-clip)
 
-
-
-# Speech to text 
-
-* using openai-whisper 
+  
