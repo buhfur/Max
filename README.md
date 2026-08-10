@@ -27,6 +27,5 @@ Can do the following :
 
 * highly customized terminal/code panes 
 
-![Proof of concept clip from Spiderman](https://archive.org/details/spiderman-clip)
-
-  
+Proof of concept video : 
+<iframe src="https://archive.org/embed/spiderman-clip" width="560" height="384" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen></iframe>
