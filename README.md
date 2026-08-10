@@ -60,3 +60,72 @@ sudo usermod -a -G render,video $USER
 ```bash
 pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.2/
 ```
+
+4. installed dependencies for AMD ROCM support 
+
+I had some issues with my system , used google gemini to help me clean it up and get the right packages. Below are just all the commands I used 
+```bash
+# install amdgpu-install 
+wget https://repo.radeon.com/amdgpu-install/6.2/ubuntu/noble/amdgpu-install_6.2.60200-1_all.deb
+
+# Install package 
+dpkg -i amdgpu-install_6.2.60200-1_all.deb
+# Build ROCM 6.2 compute engine 
+sudo apt update
+sudo amdgpu-install --usecase=rocm --no-dkms
+sudo apt-get autoremove --purge rocminfo
+sudo apt update
+sudo apt install -y rocminfo=1.0.0.60200-66~24.04
+sudo amdgpu-install --usecase=rocm --no-dkms
+echo 'export HSA_OVERRIDE_GFX_VERSION=10.3.0' >> ~/.zshrc
+echo 'export PATH=$PATH:/opt/rocm/bin' >> ~/.zshrc
+source ~/.zshrc
+
+sudo apt-get purge -y rocminfo
+sudo apt-get autoremove -y
+
+# I think I fixed it by just changing the permissions for /dev/kfd and /dev/dri/renderD*
+# Possibly just because I didn't restart and only logged out so the group permissions didn't 
+# take effect.....*sigh*
+sudo chmod 666 /dev/kfd
+sudo chmod 666 /dev/dri/renderD*
+
+# Still getting import error from ctranslate2 
+sudo apt update
+sudo apt install -y hiprand hiprand-dev
+
+# update dynamic linker paths 
+export LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH
+
+# make path and GPU targets perma
+# I keep my exports in another file which is sourced by ~/.zshrc 
+echo 'export HIP_VISIBLE_DEVICES=0' >> ~/.exports
+echo 'export HSA_OVERRIDE_GFX_VERSION=10.3.0' >> ~/.exports
+echo 'export LD_LIBRARY_PATH=/opt/rocm/lib:$LD_LIBRARY_PATH' >> ~/.exports
+source ~/.zshrc
+
+#  Install hipBLAS from the Connected AMD Repository
+sudo apt update
+sudo apt install -y hipblas hipblas-dev
+
+# Create symlink to libhipblas.so.3 
+sudo ln -s /opt/rocm/lib/libhipblas.so.2 /opt/rocm/lib/libhipblas.so.3
+
+# update runtime linker cache 
+sudo ldconfig 
+
+# find symlinks or some shit 
+ls -lh /opt/rocm/lib/libamdhip64.so*
+
+# Create symlinks 
+sudo ln -s /opt/rocm/lib/libamdhip64.so.6 /opt/rocm/lib/libamdhip64.so.7
+sudo ldconfig
+
+# Install missing rocrand packages 
+sudo apt update
+sudo apt install -y rocrand rocrand-dev
+
+# Finally , no more ctranslate2 errors 
+
+```
+
