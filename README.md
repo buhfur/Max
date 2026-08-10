@@ -47,8 +47,6 @@ export AMDGPU_TARGETS=gfx1030
 
 ```bash
 # https://github.com/OpenNMT/CTranslate2/releases/download/v4.7.1/rocm-python-wheels-Linux.zip
-# install the  ctranslate2-4.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-pip install 
-
-
+# For python3.12 
+pip install ctranslate2-4.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
 ```
