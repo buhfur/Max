@@ -28,4 +28,6 @@ Can do the following :
 * highly customized terminal/code panes 
 
 Proof of concept video : 
+[archiveorg spiderman-clip width=560 height=384 frameborder=0 webkitallowfullscreen=true mozallowfullscreen=true]
+
 <iframe src="https://archive.org/embed/spiderman-clip" width="560" height="384" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen></iframe>
