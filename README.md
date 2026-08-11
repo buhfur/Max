@@ -127,5 +127,6 @@ sudo apt install -y rocrand rocrand-dev
 
 # Finally , no more ctranslate2 errors 
 
+# rocm-smi is outdated , use amd-smi 
+sudo apt install amd-smi-lib
 ```
-

@@ -3,6 +3,8 @@
 
 - [x] figure out how to take voice-to-text  
 
+- [ ] integrate silero VAD , VADIterator into claude-stt.py 
+
 - [ ] translate and send as prompt to ollama model  
 
 

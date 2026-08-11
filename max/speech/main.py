@@ -1,15 +1,16 @@
 #!/usr/bin/env python3 
 
 import asyncio, numpy as np, sounddevice as sd
+import json 
 from faster_whisper import WhisperModel
 import httpx
 import pyaudio
 from silero_vad import load_silero_vad, VADIterator
 SAMPLE_RATE = 16000
 FRAME_MS = 30
-FRAME_SAMPLES = SAMPLE_RATE * FRAME_MS // 1000
-
-model = WhisperModel("large-v3", device="cuda", compute_type="float16")
+#FRAME_SAMPLES = SAMPLE_RATE * FRAME_MS // 1000
+FRAME_SAMPLES = 512 # Silero VAD expects 512 samples per inference 
+model = WhisperModel("large-v3", device_index=0,device="cuda", compute_type="float32")
 # Capture microphone audio , place each 30 ms chunk into frame_q 
 async def mic_producer(frame_q: asyncio.Queue):
     loop = asyncio.get_running_loop()
@@ -39,7 +40,8 @@ async def mic_producer(frame_q: asyncio.Queue):
         samplerate=SAMPLE_RATE, 
         channels=1,
         dtype="float32",
-        blocksize=FRAME_SAMPLES, callback=callback
+        blocksize=FRAME_SAMPLES,
+        callback=callback
     ):
             await asyncio.Future()  # keep stream open forever
 
@@ -47,8 +49,6 @@ async def mic_producer(frame_q: asyncio.Queue):
 async def vad_stage(frame_q: asyncio.Queue, segment_q: asyncio.Queue):
     buf, in_speech = [], False
 
-    # Commmenting out to reduce heap 
-    #model = load_silero_vad(onnx=True)
     vad_iterator = VADIterator(
         load_silero_vad(onnx=True), # Load the model 
         sampling_rate=SAMPLE_RATE, # Sets sampling rate 
@@ -56,50 +56,62 @@ async def vad_stage(frame_q: asyncio.Queue, segment_q: asyncio.Queue):
         min_silence_duration_ms=700, # min secs of silence 
     )
     while True:
-        frame = await frame_q.get() # gets recent frame in frame_q , or "microphone" chunk 
+        # Silero expects 1D array , flatten the array  
+        frame = np.asarray(await frame_q.get(), dtype=np.float32).reshape(-1) # gets recent frame in frame_q , or "microphone" chunk 
 
+        # Testing for what the frame looks like  , remove later 
+        print(
+        "VAD frame:",
+        frame.shape,
+        frame.dtype,
+        len(frame),
+        )
 
-        is_voice = vad_iterator(
+        is_voice = vad_iterator( # 
                 frame,
                 return_seconds=True
                 )
 
         if is_voice: 
-            buf.append(frame); in_speech = True
+            buf.append(frame); in_speech = True # Checks for received frame from vad_iterator 
         elif in_speech:
-            await segment_q.put(np.concatenate(buf))
+            await segment_q.put(np.concatenate(buf)) # concatenates frames in buffer , puts in segment queue 
             buf, in_speech = [], False
 
+'''notes:
+run_in_executor(): Runs sync blocking code in async event loop without freezing , sends heavy or slow task to separate thread pool or process pool making synchro functions awaitable 
+'''
 async def stt_stage(segment_q: asyncio.Queue, transcript_q: asyncio.Queue):
     loop = asyncio.get_running_loop()
     while True:
-        audio = await segment_q.get()
+        audio = await segment_q.get() # Grabs segment from async Queue 
         # offload the CPU/GPU-heavy call so it doesn't block the loop
-        segments, _ = await loop.run_in_executor(
-            None, lambda: model.transcribe(audio, beam_size=1))
+        segments, _ = await loop.run_in_executor( 
+            None, lambda: model.transcribe(audio, beam_size=1)) # Transcribes the audio using the WhisperModel 
         text = "".join(s.text for s in segments)
         if text.strip():
-            await transcript_q.put(text)
+            await transcript_q.put(text) # Adds transcribed text into transcribe queue 
 
 async def llm_stage(transcript_q: asyncio.Queue, token_q: asyncio.Queue):
-    async with httpx.AsyncClient(timeout=None) as client:
+    async with httpx.AsyncClient(timeout=None) as client: # Creates async http client 
         while True:
-            prompt = await transcript_q.get()
-            async with client.stream(
+            prompt = await transcript_q.get() # Grabs data from transcript queue 
+            async with client.stream(  # Http connection attempt 
                 "POST", "http://localhost:11434/api/generate",
-                json={"model": "llama3", "prompt": prompt, "stream": True},
+                json={"model": "qwen3:8b", "prompt": prompt, "stream": True},
             ) as resp:
                 async for line in resp.aiter_lines():
                     if not line:
                         continue
-                    chunk = json.loads(line)
-                    await token_q.put(chunk.get("response", ""))
-                    if chunk.get("done"):
+                    chunk = json.loads(line) # loads json response from Http client 
+                    await token_q.put(chunk.get("response", "")) # adds data from json object into token_q
+                    if chunk.get("done"): # once tokens are added , adds None to signal end of processing 
                         await token_q.put(None)  # end-of-turn sentinel
 
+# Gets llm output from prompt a.k.a the token_q 
 async def output_stage(token_q: asyncio.Queue):
     while True:
-        tok = await token_q.get()
+        tok = await token_q.get() # Gets recent data from token_q 
         if tok is None:
             print()  # utterance complete
             continue
@@ -116,4 +128,5 @@ async def main():
         output_stage(token_q),
     )
 
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())

@@ -7,7 +7,7 @@ from faster_whisper import WhisperModel
 # Options: "tiny", "base", "small", "medium", "large-v3"
 # Use "tiny" or "base" for the lowest latency on standard CPUs
 MODEL_SIZE = "base" 
-DEVICE = "cpu"       # Change to "cuda" if you have an NVIDIA GPU
+DEVICE = "cuda"       # Change to "cuda" if you have an NVIDIA GPU
 
 # Audio recording settings
 FORMAT = pyaudio.paInt16
