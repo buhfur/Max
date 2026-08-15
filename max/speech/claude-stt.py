@@ -21,11 +21,11 @@ async def mic_producer(frame_q: asyncio.Queue):
     def enqueue_frame(frame):
         if raw_frame_q.full(): # checks if the queue is full 
             try:
-               raw_frame_q.get_nowait() # gets frame from the queue 
+                raw_frame_q.get_nowait() # gets frame from the queue 
             except asyncio.QueueEmpty:
                 pass
 
-       raw_frame_q.put_nowait(frame) # adds frame to queue 
+        raw_frame_q.put_nowait(frame) # adds frame to queue 
 
     # Called automatically by soundevice whenever another microphone chunk is available 
     try: 
@@ -223,9 +223,9 @@ async def stt_stage(segment_q: asyncio.Queue, transcript_q: asyncio.Queue):
             if segment.no_speech_prob > 0.6:
                 continue
 
-    parts.append(segment.text.strip())
+            parts.append(segment.text.strip())
 
-text = " ".join(parts).strip()
+        text = " ".join(parts).strip()
         print("Transcript:", text)
 
         if text:
@@ -256,8 +256,10 @@ async def output_stage(token_q: asyncio.Queue):
             continue
         print(tok, end="", flush=True)   # or hand to a streaming TTS stage
 
+
 async def main():
     # Sets limit for bounded queue 
+    '''
     raw_frame_q, filtered_frame_q,  segment_q, transcript_q, token_q = (asyncio.Queue(maxsize=n) for n in (20,20, 8, 4, 256))
     await asyncio.gather(
 
@@ -272,4 +274,13 @@ async def main():
         output_stage(token_q),
     )
 
+'''
+    transcript_q = asyncio.Queue()
+
+    await test_stt_file(
+            "/home/buhfur/max/max/speech/test.wav",
+            transcript_q, 
+        )
+
 asyncio.run(main())
+
