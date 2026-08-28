@@ -1,0 +1,69 @@
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./searxng:/etc/searxng:rw
+      - searxng-data:/var/cache/searxng:rw
+
+    networks:
+      - open-webui-network
+
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    restart: unless-stopped
+
+    ports:
+      - "3000:8080"
+
+    volumes:
+      - open-webui-data:/app/backend/data
+
+    environment:
+      # SearXNG
+      ENABLE_WEB_SEARCH: "true"
+      WEB_SEARCH_ENGINE: "searxng"
+      SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+
+    depends_on:
+      - searxng
+      - open-terminal
+
+    networks:
+      - open-webui-network
+
+
+  open-terminal:
+    image: ghcr.io/open-webui/open-terminal:latest
+    container_name: open-terminal
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - open-terminal-data:/home/user
+
+    environment:
+      OPEN_TERMINAL_API_KEY: "${OPEN_TERMINAL_API_KEY}"
+
+    networks:
+      - open-webui-network
+
+
+volumes:
+  open-webui-data:
+  open-terminal-data:
+  searxng-data:
+
+
+networks:
+  open-webui-network:
+    driver: bridge
