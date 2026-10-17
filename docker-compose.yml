@@ -8,8 +8,8 @@ services:
     networks:
       - ai-stack
     # Uncomment for direct host access to the Ollama API.
-    # ports:
-    #   - "11434:11434"
+    ports:
+     - "11434:11434"
 
     # NVIDIA GPU example:
     # gpus: all
@@ -91,6 +91,72 @@ services:
     networks:
       - ai-stack
 
+        # ============================================================
+  # REA - Reverse Engineer Anything MCP Server
+  # ============================================================
+  rea:
+    build:
+      context: ./rea
+      dockerfile: Dockerfile
+
+    image: max-rea
+    container_name: rea
+    restart: unless-stopped
+
+    working_dir: /workspace
+
+    environment:
+      - HOME=/workspace
+      - PYTHONUNBUFFERED=1
+
+    volumes:
+      - rea-data:/workspace
+
+    expose:
+      - "8001"
+
+    networks:
+      - ai-stack
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/openapi.json', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    command:
+      - /bin/sh
+      - -c
+      - |
+        exec /opt/mcpo/bin/mcpo \
+          --host 0.0.0.0 \
+          --port 8001 \
+          -- rea mcp
+  # ============================================================
+  # REA Proxy - Nginx Reverse Proxy with CORS
+  # ============================================================
+  rea-proxy:
+    image: nginx:alpine
+    container_name: rea-proxy
+    restart: unless-stopped
+
+    depends_on:
+      rea:
+        condition: service_healthy
+
+    ports:
+      - "${REA_HOST_IP:-192.168.1.205}:8001:8080"
+
+    volumes:
+      - ./rea/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+    networks:
+      - ai-stack
 networks:
   ai-stack:
     name: open-webui-stack
@@ -100,3 +166,4 @@ volumes:
   open-webui-data:
   open-terminal-data:
   searxng-cache:
+  rea-data:
