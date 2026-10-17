@@ -1,0 +1,102 @@
+services:
+  ollama:
+    image: ollama/ollama:${OLLAMA_TAG:-latest}
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - ai-stack
+    # Uncomment for direct host access to the Ollama API.
+    # ports:
+    #   - "11434:11434"
+
+    # NVIDIA GPU example:
+    # gpus: all
+
+  searxng:
+    image: docker.io/searxng/searxng:${SEARXNG_TAG:-latest}
+    container_name: searxng
+    restart: unless-stopped
+    ports:
+      - "${SEARXNG_PORT:-8080}:8080"
+    volumes:
+      # SearXNG will keep its configuration here.
+      # For Open WebUI web search, make sure JSON is enabled in:
+      #   ./searxng/settings.yml
+      # under:
+      #   search:
+      #     formats:
+      #       - html
+      #       - json
+      - ./searxng:/etc/searxng:rw
+      - searxng-cache:/var/cache/searxng:rw
+    environment:
+      SEARXNG_BASE_URL: "http://localhost:${SEARXNG_PORT:-8080}/"
+    networks:
+      - ai-stack
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  open-terminal:
+    image: ghcr.io/open-webui/open-terminal:${OPEN_TERMINAL_TAG:-latest}
+    container_name: open-terminal
+    restart: unless-stopped
+    ports:
+      - "${OPEN_TERMINAL_PORT:-8000}:8000"
+    volumes:
+      - open-terminal-data:/home/user
+    environment:
+      OPEN_TERMINAL_API_KEY: "${OPEN_TERMINAL_API_KEY:-change-me}"
+    networks:
+      - ai-stack
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:${OPEN_WEBUI_TAG:-main}
+    container_name: open-webui
+    restart: unless-stopped
+    depends_on:
+      - ollama
+      - searxng
+      - open-terminal
+    ports:
+      - "${OPEN_WEBUI_PORT:-3000}:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    environment:
+      # Ollama
+      OLLAMA_BASE_URL: "http://ollama:11434"
+
+      # Open WebUI session/auth secret.
+      # Generate with: openssl rand -hex 32
+      WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:-replace-with-a-long-random-secret}"
+
+      # SearXNG web search integration
+      ENABLE_WEB_SEARCH: "true"
+      WEB_SEARCH_ENGINE: "searxng"
+      WEB_SEARCH_RESULT_COUNT: "${WEB_SEARCH_RESULT_COUNT:-5}"
+      WEB_SEARCH_CONCURRENT_REQUESTS: "${WEB_SEARCH_CONCURRENT_REQUESTS:-5}"
+      SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+
+      # Open Terminal runs on the same Docker network.
+      # Configure the Open Terminal connection in Open WebUI using:
+      #   URL: http://open-terminal:8000
+      #   API key: the value of OPEN_TERMINAL_API_KEY
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ai-stack
+
+networks:
+  ai-stack:
+    name: open-webui-stack
+
+volumes:
+  ollama-data:
+  open-webui-data:
+  open-terminal-data:
+  searxng-cache:
